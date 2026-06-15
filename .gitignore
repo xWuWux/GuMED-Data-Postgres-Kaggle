@@ -14,3 +14,12 @@ __pycache__/
 # Local dev
 .DS_Store
 *.log
+
+# Helm dependencies
+helm/medical-platform/charts/*.tgz
+
+# Local Kubernetes/Docker artifacts
+*.tar
+k3s-images-backup/
+venv/
+.env
