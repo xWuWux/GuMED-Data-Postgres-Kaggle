@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+.env
+*.egg-info/
+.venv/
+
+# Secrets (NEVER commit these)
+*-secret-raw.yaml
+/tmp/*.yaml
+*.key
+*.pem
+
+# Local dev
+.DS_Store
+*.log
