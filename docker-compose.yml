@@ -1,0 +1,110 @@
+version: "3.9"
+
+# ─────────────────────────────────────────────
+# Named volumes — data persists between restarts
+# ─────────────────────────────────────────────
+volumes:
+  postgres_data:
+  metabase_data:
+
+# ─────────────────────────────────────────────
+# Isolated network — services talk by name
+# ─────────────────────────────────────────────
+networks:
+  medical_net:
+    driver: bridge
+
+services:
+
+  # ─────────────────────────────────────────
+  # 1. PostgreSQL — primary data store
+  # ─────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: medical_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     ${POSTGRES_USER:-medicaluser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-medical123}
+      POSTGRES_DB:       ${POSTGRES_DB:-medicaldb}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"          # 5433 on host avoids conflict with your local PG
+    networks:
+      - medical_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-medicaluser} -d ${POSTGRES_DB:-medicaldb}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ─────────────────────────────────────────
+  # 2. Data Loader — runs once, then exits
+  # ─────────────────────────────────────────
+  data-loader:
+    build:
+      context: ./data-loader
+      dockerfile: Dockerfile
+    container_name: medical_loader
+    restart: "no"            # Job — run once only
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-medicaluser}:${POSTGRES_PASSWORD:-medical123}@postgres:5432/${POSTGRES_DB:-medicaldb}
+      CSV_PATH:     /data/heart_disease_uci.csv
+    networks:
+      - medical_net
+    depends_on:
+      postgres:
+        condition: service_healthy    # Wait for PG to be ready
+
+  # ─────────────────────────────────────────
+  # 3. FastAPI Backend — REST API layer
+  # ─────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: medical_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-medicaluser}:${POSTGRES_PASSWORD:-medical123}@postgres:5432/${POSTGRES_DB:-medicaldb}
+    ports:
+      - "8000:8000"
+    networks:
+      - medical_net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      data-loader:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ─────────────────────────────────────────
+  # 4. Metabase — BI dashboard
+  # ─────────────────────────────────────────
+  metabase:
+    image: metabase/metabase:latest
+    container_name: medical_metabase
+    restart: unless-stopped
+    environment:
+      MB_DB_TYPE:   postgres
+      MB_DB_DBNAME: ${POSTGRES_DB:-medicaldb}
+      MB_DB_PORT:   5432
+      MB_DB_USER:   ${POSTGRES_USER:-medicaluser}
+      MB_DB_PASS:   ${POSTGRES_PASSWORD:-medical123}
+      MB_DB_HOST:   postgres
+    volumes:
+      - metabase_data:/metabase-data
+    ports:
+      - "3000:3000"
+    networks:
+      - medical_net
+    depends_on:
+      postgres:
+        condition: service_healthy
