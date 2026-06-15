@@ -1,0 +1,90 @@
+# ============================================
+# GLOBAL SETTINGS
+# ============================================
+global:
+  postgresql:
+    auth:
+      postgresPassword: "postgres123"
+      username: "medicaluser"
+      password: "medical123"
+      database: "medicaldb"
+
+# ============================================
+# POSTGRESQL (Bitnami Subchart)
+# ============================================
+postgresql:
+  enabled: true
+  primary:
+    persistence:
+      enabled: true
+      size: 1Gi
+      storageClass: "standard"  # Use "local-path" for k3s/minikube
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+
+# ============================================
+# METABASE (Bitnami Subchart)
+# ============================================
+metabase:
+  enabled: true
+  metabaseDb:
+    type: postgres
+  auth:
+    username: "admin@medical.local"
+    password: "Metabase123!"
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+
+# ============================================
+# CUSTOM: FastAPI Backend
+# ============================================
+backend:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/xwuwux/gumed-medical-api
+    tag: "latest"
+    pullPolicy: Always
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "250m"
+
+# ============================================
+# CUSTOM: Data Loader Job
+# ============================================
+dataLoader:
+  image:
+    repository: ghcr.io/xwuwux/gumed-data-loader
+    tag: "latest"
+    pullPolicy: Always
+
+# ============================================
+# INGRESS
+# ============================================
+ingress:
+  enabled: true
+  className: "nginx"  # Use "traefik" for k3s
+  hosts:
+    - host: api.medical.local
+      paths:
+        - path: /
+          pathType: Prefix
+          service: backend
+    - host: metabase.medical.local
+      paths:
+        - path: /
+          pathType: Prefix
+          service: metabase
