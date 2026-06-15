@@ -8,7 +8,6 @@ from app.main import app
 from app.database import Base, get_db
 from app.models import HeartDisease
 
-# Use REAL PostgreSQL provided by GitHub Actions services
 TEST_DATABASE_URL = "postgresql+asyncpg://test:test@localhost:5432/testdb"
 
 test_engine = create_async_engine(TEST_DATABASE_URL, echo=False)
@@ -32,11 +31,9 @@ app.dependency_overrides[get_db] = override_get_db
 
 @pytest_asyncio.fixture(autouse=True)
 async def setup_database():
-    """Create tables and seed test data before each test"""
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     
-    # Seed test data
     async with TestSessionLocal() as session:
         test_patients = [
             HeartDisease(age=50, sex=1, cp=2, trestbps=130, chol=220,
@@ -54,7 +51,6 @@ async def setup_database():
     
     yield
     
-    # Cleanup
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
 

@@ -1,11 +1,10 @@
 apiVersion: v2
 name: medical-platform
-description: GuMED - Medical Data Platform with FastAPI, PostgreSQL, and Metabase
+description: GuMED - Medical Data Platform
 type: application
 version: 0.1.0
 appVersion: "1.0.0"
 
-# Dependencies: Official Bitnami charts
 dependencies:
   - name: postgresql
     version: "15.5.0"
