@@ -28,13 +28,13 @@ metabase:
 backend:
   replicaCount: 1
   image:
-    repository: ghcr.io/xwuwux/gumed-medical-api
+    repository: docker.io/library/medical-platform-backend
     tag: "latest"
     pullPolicy: IfNotPresent
 
 dataLoader:
   image:
-    repository: ghcr.io/xwuwux/gumed-data-loader
+    repository: docker.io/library/medical-platform-data-loader
     tag: "latest"
     pullPolicy: IfNotPresent
 
