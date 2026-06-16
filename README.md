@@ -142,3 +142,47 @@ Expected result:
 target 0 = 138
 target 1 = 165
 ```
+
+---
+
+## Container images
+
+The default Helm values use images published to GitHub Container Registry:
+
+```text
+ghcr.io/xwuwux/gumed-medical-api:latest
+ghcr.io/xwuwux/gumed-data-loader:latest
+```
+
+Images are built and pushed automatically by GitHub Actions using:
+
+```text
+.github/workflows/build-ghcr.yml
+```
+
+For local k3s development without pulling backend and data-loader images from GHCR, use:
+
+```bash
+helm upgrade --install medical-platform ./helm/medical-platform \
+  --namespace medical-platform \
+  --create-namespace \
+  -f helm/medical-platform/values-local.yaml \
+  --wait=false
+```
+
+For GHCR-based deployment, use:
+
+```bash
+helm upgrade --install medical-platform ./helm/medical-platform \
+  --namespace medical-platform \
+  --create-namespace \
+  --wait=false
+```
+
+---
+
+## CI/CD status
+
+![CI/CD Pipeline](https://github.com/xWuWux/GuMED-Data-Postgres-Kaggle/actions/workflows/ci-cd.yml/badge.svg)
+
+![Build and Push Images to GHCR](https://github.com/xWuWux/GuMED-Data-Postgres-Kaggle/actions/workflows/build-ghcr.yml/badge.svg)
